@@ -70,38 +70,71 @@ class WebViewActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         webView.settings.apply {
-            // 启用JavaScript
+            // ========== 基础功能 ==========
+            // 启用JavaScript（音乐播放必需）
             javaScriptEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
+            javaScriptCanOpenWindowsAutomatically = false
             
-            // DOM存储
+            // DOM存储（网页功能必需）
             domStorageEnabled = true
+            databaseEnabled = true
             
-            // 缓存设置
-            cacheMode = WebSettings.LOAD_DEFAULT
+            // ========== 性能优化 - 针对低性能电视 ==========
+            // 缓存策略：优先使用缓存减少网络请求
+            cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
             
             // 媒体设置
             mediaPlaybackRequiresUserGesture = false
             
-            // 缩放设置
-            setSupportZoom(true)
-            builtInZoomControls = true
+            // 禁用缩放功能（电视不需要，减少计算）
+            setSupportZoom(false)
+            builtInZoomControls = false
             displayZoomControls = false
             
-            // 视口设置
+            // 视口设置 - 简化渲染
             useWideViewPort = true
             loadWithOverviewMode = true
+            
+            // 文本缩放 - 电视大屏适配
+            textZoom = 100
             
             // 混合内容
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             
-            // 允许文件访问
+            // 禁用不必要的功能以提升性能
             allowFileAccess = true
             allowContentAccess = true
+            
+            // 禁用地理位置（电视不需要）
+            setGeolocationEnabled(false)
+            
+            // 图片加载策略
+            loadsImagesAutomatically = true
+            blockNetworkImage = false
+            
+            // 默认编码
+            defaultTextEncodingName = "UTF-8"
+            
+            // 渲染优化
+            @Suppress("DEPRECATION")
+            setRenderPriority(WebSettings.RenderPriority.HIGH)
+            
+            // 启用平滑滚动
+            @Suppress("DEPRECATION")
+            setEnableSmoothTransition(true)
         }
 
-        // 硬件加速
+        // ========== 渲染层设置 ==========
+        // 对于低性能设备，使用软件渲染可能更稳定
+        // 但先尝试硬件加速，如果还是卡可以改成 LAYER_TYPE_SOFTWARE
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        
+        // 禁用滚动条（减少绘制）
+        webView.isVerticalScrollBarEnabled = false
+        webView.isHorizontalScrollBarEnabled = false
+        
+        // 禁用过度滚动效果
+        webView.overScrollMode = View.OVER_SCROLL_NEVER
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -112,6 +145,9 @@ class WebViewActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 progressBar.visibility = View.GONE
+                
+                // 页面加载完成后注入CSS优化性能
+                injectPerformanceCSS()
             }
 
             @Deprecated("Deprecated in Java")
@@ -127,6 +163,36 @@ class WebViewActivity : AppCompatActivity() {
                 progressBar.progress = newProgress
             }
         }
+    }
+    
+    /**
+     * 注入CSS优化网页渲染性能
+     */
+    private fun injectPerformanceCSS() {
+        val css = """
+            * {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+            }
+            *::-webkit-scrollbar {
+                display: none !important;
+            }
+            body {
+                -webkit-font-smoothing: antialiased;
+                -webkit-overflow-scrolling: touch;
+            }
+        """.trimIndent().replace("\n", " ")
+        
+        val js = """
+            (function() {
+                var style = document.createElement('style');
+                style.type = 'text/css';
+                style.innerHTML = '$css';
+                document.head.appendChild(style);
+            })();
+        """.trimIndent()
+        
+        webView.evaluateJavascript(js, null)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
