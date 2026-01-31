@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 背景色 -->
+    <color name="background_dark">#1A1A2E</color>
+    <color name="card_background">#16213E</color>
+    
+    <!-- 强调色 -->
+    <color name="accent_color">#E94560</color>
+    <color name="accent_color_dark">#B8304F</color>
+    
+    <!-- 文字颜色 -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0C0</color>
+    <color name="text_hint">#6C6C80</color>
+    
+    <!-- 焦点状态 -->
+    <color name="focus_border">#E94560</color>
+</resources>
